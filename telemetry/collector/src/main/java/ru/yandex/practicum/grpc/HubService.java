@@ -57,6 +57,7 @@ public class HubService {
             condition.setSensorId(conditionProto.getSensorId());
             condition.setType(ConditionType.valueOf(conditionProto.getType().name()));
             condition.setOperation(ConditionOperation.valueOf(conditionProto.getOperation().name()));
+            condition.setValue(conditionProto.getIntValue());
             conditions.add(condition);
         }
         return conditions;
