@@ -32,5 +32,6 @@ public class EventController {
         log.info(event.toString());
         kafkaProducerService.sendMessage(event, EventType.HUB_EVENT, event.getHubId());
     }
+
 }
 
