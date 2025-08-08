@@ -1,36 +1,62 @@
 package ru.yandex.practicum.controller;
 
-import jakarta.validation.Valid;
+import com.google.protobuf.Empty;
+import io.grpc.Status;
+import io.grpc.StatusRuntimeException;
+import io.grpc.stub.StreamObserver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import net.devh.boot.grpc.server.service.GrpcService;
+import ru.yandex.practicum.grpc.HubService;
+import ru.yandex.practicum.grpc.SensorService;
+import ru.yandex.practicum.grpc.telemetry.collector.CollectorControllerGrpc;
+import ru.yandex.practicum.grpc.telemetry.event.HubEventProto;
+import ru.yandex.practicum.grpc.telemetry.event.SensorEventProto;
 import ru.yandex.practicum.kafka.KafkaProducerService;
 import ru.yandex.practicum.model.EventType;
 import ru.yandex.practicum.model.hub.HubEvent;
 import ru.yandex.practicum.model.sensor.SensorEvent;
 
 @Slf4j
-@RestController
-@RequestMapping("/events")
+@GrpcService
 @RequiredArgsConstructor
-public class EventController {
+public class EventController extends CollectorControllerGrpc.CollectorControllerImplBase {
+    private final SensorService sensorService;
+    private final HubService hubService;
     private final KafkaProducerService kafkaProducerService;
 
-    @PostMapping("/sensors")
-    public void sensorEvent(@Valid @RequestBody SensorEvent event) {
-        log.info("Получено событие датчика: " + event.getType());
-        log.info(event.toString());
-        kafkaProducerService.sendMessage(event, EventType.SENSOR_EVENT, event.getHubId());
+    @Override
+    public void collectSensorEvent(SensorEventProto request, StreamObserver<Empty> responseObserver) {
+        try {
+            SensorEvent event = sensorService.map(request);
+            kafkaProducerService.sendMessage(event, EventType.SENSOR_EVENT, event.getHubId());
+            log.info("Получено событие датчика: " + event.getType());
+            responseObserver.onNext(Empty.getDefaultInstance());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(new StatusRuntimeException(
+                    Status.INTERNAL
+                            .withDescription(e.getLocalizedMessage())
+                            .withCause(e)
+            ));
+        }
     }
 
-    @PostMapping("/hubs")
-    public void hubEvent(@Valid @RequestBody HubEvent event) {
-        log.info("Получено событие хаба: " + event.getType());
-        log.info(event.toString());
-        kafkaProducerService.sendMessage(event, EventType.HUB_EVENT, event.getHubId());
+    @Override
+    public void collectHubEvent(HubEventProto request, StreamObserver<Empty> responseObserver) {
+        try {
+            HubEvent event = hubService.map(request);
+            kafkaProducerService.sendMessage(event, EventType.HUB_EVENT, event.getHubId());
+            log.info("Получено событие от хаба: " + event.getType());
+            responseObserver.onNext(Empty.getDefaultInstance());
+            responseObserver.onCompleted();
+        } catch (Exception e) {
+            responseObserver.onError(new StatusRuntimeException(
+                    Status.INTERNAL
+                            .withDescription(e.getLocalizedMessage())
+                            .withCause(e)
+            ));
+        }
     }
 
 }
