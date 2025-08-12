@@ -8,6 +8,7 @@ import ru.yandex.practicum.kafka.telemetry.event.SensorEventAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorStateAvro;
 import ru.yandex.practicum.kafka.telemetry.event.SensorsSnapshotAvro;
 
+import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
@@ -19,78 +20,45 @@ import java.util.concurrent.ConcurrentMap;
 @RequiredArgsConstructor
 public class AggregationService {
     private final ProducerService producerService;
-    private final ConcurrentMap<String, SensorsSnapshotAvro> snapshots = new ConcurrentHashMap<>();
+    private final Map<String, SensorsSnapshotAvro> snapshots = new ConcurrentHashMap<>();
 
     @KafkaListener(topics = "${kafka.sensor-events.topic}")
     public void handleSensorEvent(SensorEventAvro event) {
         try {
-            validateEvent(event);
-            log.debug("AGGREGATOR: Получено событие от датчика ID = {}", event.getId());
+            log.info("AGGREGATOR: Получено событие от датчика ID = {}", event.getId());
+            Optional<SensorsSnapshotAvro> snapshot = updateState(event);
+            if (snapshot.isPresent()) {
+                producerService.sendMessage(snapshot.get(), event.getHubId());
+            }
 
-            updateState(event).ifPresent(snapshot -> {
-                producerService.sendMessage(snapshot, event.getHubId());
-                log.debug("AGGREGATOR: Отправлен обновленный снапшот для хаба {}", event.getHubId());
-            });
-
-        } catch (IllegalArgumentException e) {
-            log.warn("Некорректное событие: {}", e.getMessage());
         } catch (Exception e) {
             log.error("Ошибка обработки события: {}", event, e);
         }
     }
 
-    private void validateEvent(SensorEventAvro event) {
-        if (event == null) {
-            throw new IllegalArgumentException("Событие не может быть null");
-        }
-        if (event.getHubId() == null || event.getId() == null) {
-            throw new IllegalArgumentException("ID хаба и датчика обязательны");
-        }
-        if (event.getTimestamp() == null) {
-            throw new IllegalArgumentException("Таймстемп обязателен");
-        }
-    }
-
     private Optional<SensorsSnapshotAvro> updateState(SensorEventAvro event) {
-        SensorsSnapshotAvro snapshot = snapshots.compute(event.getHubId(), (key, existing) -> {
-            if (existing == null) {
-                return SensorsSnapshotAvro.newBuilder()
+        snapshots.computeIfAbsent(event.getHubId(),
+                k -> SensorsSnapshotAvro.newBuilder()
                         .setHubId(event.getHubId())
+                        .setTimestamp(Instant.now())
                         .setSensorsState(new HashMap<>())
-                        .setTimestamp(event.getTimestamp())
-                        .build();
-            }
-            return updateSnapshot(existing, event);
-        });
-        boolean wasUpdated = !snapshot.getTimestamp().equals(event.getTimestamp());
-        return wasUpdated ? Optional.of(snapshot) : Optional.empty();
-    }
-
-    private SensorsSnapshotAvro updateSnapshot(SensorsSnapshotAvro snapshot, SensorEventAvro event) {
+                        .build());
+        SensorsSnapshotAvro snapshot = snapshots.get(event.getHubId());
         SensorStateAvro oldState = snapshot.getSensorsState().get(event.getId());
-        if (shouldUpdateState(oldState, event)) {
-            SensorStateAvro newState = createNewState(event);
-            Map<String, SensorStateAvro> newStates = new HashMap<>(snapshot.getSensorsState());
-            newStates.put(event.getId(), newState);
-
-            return SensorsSnapshotAvro.newBuilder(snapshot)
-                    .setSensorsState(newStates)
-                    .setTimestamp(event.getTimestamp())
-                    .build();
+        if (oldState != null) {
+            if (oldState.getTimestamp().isAfter(event.getTimestamp()) ||
+                    oldState.getData().equals(event.getPayload())) {
+                log.info("AGGREGATOR: snapshot не требует обновления.");
+                return Optional.empty();
+            }
         }
-        return snapshot;
-    }
-
-    private boolean shouldUpdateState(SensorStateAvro oldState, SensorEventAvro event) {
-        return oldState == null ||
-                !(oldState.getTimestamp().isAfter(event.getTimestamp()) ||
-                        oldState.getData().equals(event.getPayload()));
-    }
-
-    private SensorStateAvro createNewState(SensorEventAvro event) {
-        return SensorStateAvro.newBuilder()
+        SensorStateAvro newState = SensorStateAvro.newBuilder()
                 .setTimestamp(event.getTimestamp())
                 .setData(event.getPayload())
                 .build();
+        snapshot.getSensorsState().put(event.getId(), newState);
+        snapshot.setTimestamp(event.getTimestamp());
+        log.info("AGGREGATOR: snapshot был обновлён.");
+        return Optional.of(snapshot);
     }
 }
