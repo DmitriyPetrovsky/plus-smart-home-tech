@@ -1,6 +1,5 @@
 package ru.yandex.practicum.service;
 
-import com.google.protobuf.Timestamp;
 import org.springframework.transaction.annotation.Transactional;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +13,6 @@ import ru.yandex.practicum.model.Condition;
 import ru.yandex.practicum.model.Scenario;
 import ru.yandex.practicum.repository.ScenarioRepository;
 
-import java.time.Instant;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -146,13 +144,5 @@ public class SnapshotListenerService {
                 log.warn("Неизвестный тип сенсора: {}", data.getClass().getSimpleName());
                 return null;
         }
-    }
-
-    private Timestamp toProtoTimestamp(long millis) {
-        Instant instant = Instant.ofEpochMilli(millis);
-        return Timestamp.newBuilder()
-                .setSeconds(instant.getEpochSecond())
-                .setNanos(instant.getNano())
-                .build();
     }
 }
