@@ -17,7 +17,7 @@ public class GrpcClient {
     public void send(DeviceActionRequest request) {
         try {
             stub.handleDeviceAction(request);
-            log.info("Команда отправлена: {}", request);
+            log.info("Команда отправлена: \n{}", request);
         } catch (Exception e) {
             log.error("Ошибка отправки команды: {}", e.getMessage(), e);
         }
