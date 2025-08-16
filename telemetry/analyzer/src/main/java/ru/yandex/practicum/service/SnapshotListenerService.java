@@ -111,10 +111,6 @@ public class SnapshotListenerService {
             case EQUALS -> actual.equals(expected);
             case GREATER_THAN -> actual > expected;
             case LOWER_THAN -> actual < expected;
-            default -> {
-                log.warn("Неизвестная операция сравнения: {}", condition.getOperation());
-                yield false;
-            }
         };
     }
 
