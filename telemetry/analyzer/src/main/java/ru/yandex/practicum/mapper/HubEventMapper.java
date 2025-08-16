@@ -61,7 +61,7 @@ public class HubEventMapper {
     private static Condition mapToCondition(ScenarioConditionAvro scenarioConditionAvro) {
         Condition condition = new Condition();
         condition.setType(ConditionType.valueOf(scenarioConditionAvro.getType().toString()));
-        condition.setOperation(scenarioConditionAvro.getOperation().toString());
+        condition.setOperation(ConditionOperation.valueOf(scenarioConditionAvro.getOperation().toString()));
         if (scenarioConditionAvro.getValue().getClass() == Boolean.class) {
             if ((Boolean) scenarioConditionAvro.getValue()) {
                 condition.setValue(1);

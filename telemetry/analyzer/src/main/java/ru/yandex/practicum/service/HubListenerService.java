@@ -48,7 +48,6 @@ public class HubListenerService {
     public void addDevice(HubEventAvro hubEvent) {
         try {
             sensorRepository.save(HubEventMapper.mapToSensor(hubEvent));
-            log.info("Сенсор успешно добавлен!");
         } catch (Exception e) {
             log.error("Ошибка при добавлении нового сенсора: {}", e.getMessage());
         }

@@ -34,6 +34,7 @@ public class EventController extends CollectorControllerGrpc.CollectorController
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
         } catch (Exception e) {
+            log.error("Ошибка при получении события от датчика: {}", e.getMessage());
             responseObserver.onError(new StatusRuntimeException(
                     Status.INTERNAL
                             .withDescription(e.getLocalizedMessage())
@@ -51,6 +52,7 @@ public class EventController extends CollectorControllerGrpc.CollectorController
             responseObserver.onNext(Empty.getDefaultInstance());
             responseObserver.onCompleted();
         } catch (Exception e) {
+            log.error("Ошибка при получении события хаба: {}", e.getMessage());
             responseObserver.onError(new StatusRuntimeException(
                     Status.INTERNAL
                             .withDescription(e.getLocalizedMessage())

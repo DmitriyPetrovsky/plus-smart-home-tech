@@ -25,11 +25,8 @@ public class AggregationService {
     public void handleSensorEvent(SensorEventAvro event) {
         try {
             log.info("AGGREGATOR: Получено событие от датчика ID = {}", event.getId());
-            Optional<SensorsSnapshotAvro> snapshot = updateState(event);
-            if (snapshot.isPresent()) {
-                producerService.sendMessage(snapshot.get(), event.getHubId());
-            }
-
+            updateState(event)
+                    .ifPresent(snapshot -> producerService.sendMessage(snapshot, event.getHubId()));
         } catch (Exception e) {
             log.error("Ошибка обработки события: {}", event, e);
         }
