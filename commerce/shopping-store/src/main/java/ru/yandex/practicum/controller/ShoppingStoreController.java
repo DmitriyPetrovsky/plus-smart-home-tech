@@ -12,7 +12,6 @@ import ru.yandex.practicum.dto.SetProductQuantityStateRequest;
 import ru.yandex.practicum.feign.ShoppingStoreOperations;
 import ru.yandex.practicum.service.ShoppingStoreService;
 
-import java.util.Collection;
 import java.util.UUID;
 
 @Slf4j
@@ -24,29 +23,31 @@ public class ShoppingStoreController implements ShoppingStoreOperations {
 
     @Override
     public Page<ProductDto> searchProducts(ProductCategory category, Pageable params) {
-        log.info("Получен запрос на поиск товара, параметры:");
-        log.info("категория товара: {}", category);
-        log.info("параметры вывода: {}", params);
+        log.info("Получен запрос на поиск товаров по категории: {}", category);
         return shoppingService.getProductsByCategory(category, params);
     }
 
     @Override
     public ProductDto addProduct(ProductDto product) {
+        log.info("Получен запрос на добавление товара");
         return shoppingService.addProduct(product);
     }
 
     @Override
     public ProductDto getProductById(UUID productId) {
+        log.info("Получен запрос на получение товара по ID: {}", productId);
         return shoppingService.findProductById(productId);
     }
 
     @Override
     public ProductDto updateProduct(ProductDto product) {
+        log.info("Получен запрос на обновление информации о товаре с ID: {}", product.getProductId());
         return shoppingService.updateProduct(product);
     }
 
     @Override
     public boolean removeProduct(UUID productId) {
+        log.info("Получен запрос на удаление информации о товаре с ID: {}", productId);
         shoppingService.removeProductFromStore(productId);
         return true;
     }
@@ -54,6 +55,7 @@ public class ShoppingStoreController implements ShoppingStoreOperations {
 
     @Override
     public boolean updateProductQuantity(SetProductQuantityStateRequest request) {
+        log.info("Получен запрос на измененине информации о количестве товара с ID: {}", request.getProductId());
         shoppingService.setProductQuantityState(request);
         return true;
     }

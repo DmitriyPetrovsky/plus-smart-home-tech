@@ -3,11 +3,6 @@ package ru.yandex.practicum.mapper;
 import ru.yandex.practicum.dto.ProductDto;
 import ru.yandex.practicum.model.Product;
 
-import java.util.Collection;
-import java.util.Collections;
-import java.util.List;
-import java.util.stream.Collectors;
-
 public class ProductMapper {
     public static ProductDto mapToProductDto(Product product) {
         ProductDto productDto = new ProductDto();
@@ -35,15 +30,5 @@ public class ProductMapper {
         product.setProductCategory(productDto.getProductCategory());
         product.setPrice(productDto.getPrice());
         return product;
-    }
-
-    public static Collection<ProductDto> mapToListProductDto(List<Product> products) {
-        if (products == null) {
-            return Collections.emptyList();
-        }
-
-        return products.stream()
-                .map(ProductMapper::mapToProductDto)
-                .collect(Collectors.toList());
     }
 }

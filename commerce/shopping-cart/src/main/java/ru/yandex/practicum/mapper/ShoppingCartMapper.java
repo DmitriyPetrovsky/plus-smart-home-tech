@@ -10,7 +10,6 @@ public class ShoppingCartMapper {
         if (cart == null) {
             return null;
         }
-
         return new ShoppingCartDto(
                 cart.getShoppingCartId(),
                 cart.getProducts() != null ? new HashMap<>(cart.getProducts()) : new HashMap<>()

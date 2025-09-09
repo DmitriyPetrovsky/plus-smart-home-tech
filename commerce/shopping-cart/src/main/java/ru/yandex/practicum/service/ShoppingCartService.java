@@ -85,7 +85,7 @@ public class ShoppingCartService {
 
     private void validateUsername(String username) {
         if (username.isBlank()) {
-            throw new NotAuthorizedUserException("Username is blank");
+            throw new NotAuthorizedUserException("Отсутствует информация о пользователе в запросе");
         }
     }
 

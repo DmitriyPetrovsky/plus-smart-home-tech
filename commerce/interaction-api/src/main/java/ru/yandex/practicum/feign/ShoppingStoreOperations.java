@@ -10,7 +10,6 @@ import ru.yandex.practicum.dto.ProductCategory;
 import ru.yandex.practicum.dto.ProductDto;
 import ru.yandex.practicum.dto.SetProductQuantityStateRequest;
 
-import java.util.Collection;
 import java.util.UUID;
 
 @FeignClient(name = "shopping-store")

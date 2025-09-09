@@ -62,39 +62,30 @@ public class WarehouseService {
     @Transactional(readOnly = true)
     public BookedProductsDto checkShoppingCart(ShoppingCartDto shoppingCart) {
         List<UUID> productIds = new ArrayList<>(shoppingCart.getProducts().keySet());
-
-        // Один запрос для всех продуктов
         Map<UUID, WarehouseProduct> products = warehouseRepository.findAllByProductIdIn(productIds)
                 .stream()
                 .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
-
         boolean hasFragile = false;
         double totalVolume = 0d;
         double totalWeight = 0d;
-
         for (Map.Entry<UUID, Integer> entry : shoppingCart.getProducts().entrySet()) {
             UUID productId = entry.getKey();
             Integer quantity = entry.getValue();
-
             WarehouseProduct product = products.get(productId);
             if (product == null) {
                 throw new ProductNotFoundException("Товар с ID " + productId + " не найден на складе");
             }
-
             if (product.getQuantity() < quantity) {
                 throw new NotEnoughQuantityException("Недостаточно товара с ID " + productId + " на складе.");
             }
-
             if (product.isFragile()) {
                 hasFragile = true;
             }
-
             double productVolume = product.getHeight() * product.getWidth() * product.getDepth() * quantity;
             double productWeight = product.getWeight() * quantity;
             totalVolume += productVolume;
             totalWeight += productWeight;
         }
-
         return new BookedProductsDto(totalWeight, totalVolume, hasFragile);
     }
 }

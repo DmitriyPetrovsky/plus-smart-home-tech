@@ -19,23 +19,25 @@ public class WarehouseController implements WarehouseOperations {
 
     @Override
     public void addProductToWarehouse(@Valid @RequestBody NewProductInWarehouseRequest request) {
-        log.info("Запрос на добавление товара {} в базу", request.getProductId());
+        log.info("Получен запрос на добавление товара {} в базу", request.getProductId());
         warehouseService.addNewProductToWarehouse(request);
     }
 
     @Override
     public BookedProductsDto checkShoppingCart(ShoppingCartDto shoppingCartDto) {
+        log.info("Получен запрос на проверку корзины товаров c ID: {}", shoppingCartDto.getShoppingCartId());
         return warehouseService.checkShoppingCart(shoppingCartDto);
     }
 
     @Override
     public void increaseProductQuantity(AddProductToWarehouseRequest request) {
-        log.info("Запрос на увеличение количества товара {} на {} единиц", request.getProductId(), request.getQuantity());
+        log.info("Получен запрос на увеличение количества товара с ID: {} на {} единиц", request.getProductId(), request.getQuantity());
         warehouseService.increaseProductQuantity(request);
     }
 
     @Override
     public AddressDto getWarehouseAddress() {
+        log.info("Получен запрос на выдачу адреса склада");
         return warehouseService.getWarehouseAddress();
     }
 
