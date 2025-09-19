@@ -51,8 +51,14 @@ public class WarehouseController implements WarehouseOperations {
     }
 
     @Override
-    public void bookProductsFromOrder(OrderDto orderDto) {
+    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest assembly) {
         log.info("Получен запрос на бронирование товаров на складе");
-        warehouseService.bookProductsFromOrder(orderDto);
+        return warehouseService.assemblyProductsForOrder(assembly);
+    }
+
+    @Override
+    public void shippedToDelivery(@Valid @RequestBody ShippedToDeliveryRequest shippedToDeliveryRequest) {
+        log.info("Получен запрос на отгрузку товара");
+        warehouseService.shipToDelivery(shippedToDeliveryRequest);
     }
 }

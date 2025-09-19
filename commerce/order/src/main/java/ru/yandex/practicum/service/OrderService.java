@@ -132,6 +132,10 @@ public class OrderService {
     public OrderDto orderAssembly(UUID orderId) {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Заказ с ID " + orderId + " не найден!"));
+        AssemblyProductsForOrderRequest request = new AssemblyProductsForOrderRequest();
+        request.setOrderId(order.getOrderId());
+        request.setProducts(order.getProducts());
+        warehouseOperations.assemblyProductsForOrder(request);
         order.setOrderState(OrderState.ASSEMBLED);
         return OrderMapper.mapToOrderDto(orderRepository.save(order));
     }
@@ -140,5 +144,12 @@ public class OrderService {
         Order order = orderRepository.findById(orderId)
                 .orElseThrow(() -> new NotFoundException("Заказ с ID " + orderId + " не найден!"));
         order.setOrderState(OrderState.ASSEMBLY_FAILED);
-        return OrderMapper.mapToOrderDto(orderRepository.save(order));    }
+        return OrderMapper.mapToOrderDto(orderRepository.save(order));
+    }
+
+    public OrderDto findOrderById(UUID orderId) {
+        return OrderMapper.mapToOrderDto(orderRepository.findById(orderId)
+                .orElseThrow(() -> new NotFoundException("Заказ с ID " + orderId + " не найден!")));
+    }
+
 }

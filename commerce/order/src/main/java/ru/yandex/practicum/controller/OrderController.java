@@ -96,4 +96,10 @@ public class OrderController implements OrderOperations {
         log.info("Получен запрос на расчет стоимости товаров заказа {}", orderId);
         return orderService.calculateProductsOrderCost(orderId);
     }
+
+    @Override
+    public OrderDto findOrderById(@RequestBody UUID orderId) {
+        return orderService.findOrderById(orderId);
+    }
+
 }

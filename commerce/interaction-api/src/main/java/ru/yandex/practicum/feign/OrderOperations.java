@@ -49,4 +49,7 @@ public interface OrderOperations {
 
     @PostMapping("/assembly/failed")
     OrderDto orderAssemblyFailed(@RequestBody UUID orderId);
+
+    @GetMapping("/id")
+    OrderDto findOrderById(@RequestBody UUID orderId);
 }

@@ -29,6 +29,9 @@ public interface WarehouseOperations {
     @PostMapping("/return")
     void returnProducts(@RequestBody Map<UUID, Integer> returnedItems);
 
-    @PostMapping("/book")
-    void bookProductsFromOrder(@RequestBody OrderDto orderDto);
+    @PostMapping("/assembly")
+    BookedProductsDto assemblyProductsForOrder(@Valid @RequestBody AssemblyProductsForOrderRequest assembly);
+
+    @PostMapping("/shipped")
+    void shippedToDelivery(@Valid @RequestBody ShippedToDeliveryRequest shippedToDeliveryRequest);
 }

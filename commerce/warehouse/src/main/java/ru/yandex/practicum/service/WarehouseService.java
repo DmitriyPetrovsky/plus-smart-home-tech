@@ -8,9 +8,12 @@ import ru.yandex.practicum.exception.NotEnoughQuantityException;
 import ru.yandex.practicum.exception.NotFoundException;
 import ru.yandex.practicum.exception.ProductAlreadyInWarehouseException;
 import ru.yandex.practicum.exception.ProductNotFoundException;
+import ru.yandex.practicum.feign.OrderOperations;
 import ru.yandex.practicum.feign.ShoppingCartOperations;
-import ru.yandex.practicum.mapper.WarehouseProductMapper;
+import ru.yandex.practicum.mapper.WarehouseMapper;
+import ru.yandex.practicum.model.OrderBooking;
 import ru.yandex.practicum.model.WarehouseProduct;
+import ru.yandex.practicum.repository.OrderBookingRepository;
 import ru.yandex.practicum.repository.WarehouseRepository;
 
 
@@ -23,6 +26,8 @@ import java.util.stream.Collectors;
 public class WarehouseService {
     private final WarehouseRepository warehouseRepository;
     private final ShoppingCartOperations shoppingCartOperations;
+    private final OrderOperations orderOperations;
+    private final OrderBookingRepository orderBookingRepository;
 
     private final List<AddressDto> addresses = List.of(
             new AddressDto("ADDRESS_1", "ADDRESS_1", "ADDRESS_1", "ADDRESS_1", "ADDRESS_1"),
@@ -32,7 +37,7 @@ public class WarehouseService {
     @Transactional
     public void addNewProductToWarehouse(NewProductInWarehouseRequest request) {
         checkIfProductAlreadyInWarehouse(request.getProductId());
-        WarehouseProduct product = WarehouseProductMapper.mapToWarehouseProduct(request);
+        WarehouseProduct product = WarehouseMapper.mapToWarehouseProduct(request);
         warehouseRepository.save(product);
     }
 
@@ -98,9 +103,10 @@ public class WarehouseService {
         requests.forEach(this::increaseProductQuantity);
     }
 
-    public void bookProductsFromOrder(OrderDto orderDto) {
+    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest assembly) {
+        OrderDto orderDto = orderOperations.findOrderById(assembly.getOrderId());
         ShoppingCartDto shoppingCartDto = shoppingCartOperations.getShoppingCartById(orderDto.getShoppingCartId());
-        checkShoppingCart(shoppingCartDto);
+        BookedProductsDto bookedProductsDto = checkShoppingCart(shoppingCartDto);
         Map<UUID, Integer> products = orderDto.getProducts();
         for (Map.Entry<UUID, Integer> entry : products.entrySet()) {
             UUID productId = entry.getKey();
@@ -111,6 +117,15 @@ public class WarehouseService {
             product.setQuantity(product.getQuantity() - quantity);
             warehouseRepository.save(product);
         }
+        OrderBooking orderBooking = WarehouseMapper.mapToOrderBooking(bookedProductsDto, assembly);
+        orderBookingRepository.save(orderBooking);
+        return bookedProductsDto;
     }
 
+    public void shipToDelivery(ShippedToDeliveryRequest request) {
+        OrderBooking booking = orderBookingRepository.findByOrderId(request.getOrderId());
+        booking.setDeliveryId(request.getDeliveryId());
+        orderBookingRepository.save(booking);
     }
+
+}
