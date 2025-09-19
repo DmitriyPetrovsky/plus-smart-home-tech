@@ -10,6 +10,9 @@ import ru.yandex.practicum.dto.*;
 import ru.yandex.practicum.feign.WarehouseOperations;
 import ru.yandex.practicum.service.WarehouseService;
 
+import java.util.Map;
+import java.util.UUID;
+
 @Slf4j
 @RestController
 @RequiredArgsConstructor
@@ -41,4 +44,21 @@ public class WarehouseController implements WarehouseOperations {
         return warehouseService.getWarehouseAddress();
     }
 
+    @Override
+    public void returnProducts(Map<UUID, Integer> returnedItems) {
+        log.info("Получен запрос на возврат товаров");
+        warehouseService.returnProducts(returnedItems);
+    }
+
+    @Override
+    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest assembly) {
+        log.info("Получен запрос на бронирование товаров на складе");
+        return warehouseService.assemblyProductsForOrder(assembly);
+    }
+
+    @Override
+    public void shippedToDelivery(@Valid @RequestBody ShippedToDeliveryRequest shippedToDeliveryRequest) {
+        log.info("Получен запрос на отгрузку товара");
+        warehouseService.shipToDelivery(shippedToDeliveryRequest);
+    }
 }
