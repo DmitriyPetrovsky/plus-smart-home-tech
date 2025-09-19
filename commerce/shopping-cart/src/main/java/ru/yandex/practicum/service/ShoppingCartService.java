@@ -6,6 +6,7 @@ import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.dto.ChangeProductQuantityRequest;
 import ru.yandex.practicum.dto.ShoppingCartDto;
 import ru.yandex.practicum.exception.NotAuthorizedUserException;
+import ru.yandex.practicum.exception.NotFoundException;
 import ru.yandex.practicum.feign.WarehouseOperations;
 import ru.yandex.practicum.mapper.ShoppingCartMapper;
 import ru.yandex.practicum.model.ShoppingCart;
@@ -34,7 +35,7 @@ public class ShoppingCartService {
         try {
             warehouseClient.checkShoppingCart(cartDto);
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         shoppingCartRepository.save(shoppingCart);
         return cartDto;
@@ -77,7 +78,7 @@ public class ShoppingCartService {
         try {
             warehouseClient.checkShoppingCart(cartDto);
         } catch (Exception e) {
-
+            e.printStackTrace();
         }
         shoppingCartRepository.save(shoppingCart);
         return cartDto;
@@ -98,5 +99,10 @@ public class ShoppingCartService {
                     newShoppingCart.setState(ShoppingCartState.ACTIVE);
                     return shoppingCartRepository.save(newShoppingCart);
                 });
+    }
+
+    public ShoppingCartDto getShoppingCartById(UUID shoppingCartId) {
+        return ShoppingCartMapper.mapToShoppingCartDto(shoppingCartRepository.findById(shoppingCartId)
+                .orElseThrow(()-> new NotFoundException("Корзина не найдена")));
     }
 }

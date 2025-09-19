@@ -5,17 +5,21 @@ import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Map;
 import java.util.UUID;
 
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShoppingCartDto {
+public class PaymentDto {
     @NotNull
-    private UUID shoppingCartId;
+    private UUID paymentId;
     @NotNull
-    private String username;
+    private UUID orderId;
     @NotNull
-    private Map<UUID, Integer> products;
+    private Double totalPayment;
+    @NotNull
+    private Double deliveryTotal;
+    @NotNull
+    private Double feeTotal;
+    private PaymentState paymentState;
 }

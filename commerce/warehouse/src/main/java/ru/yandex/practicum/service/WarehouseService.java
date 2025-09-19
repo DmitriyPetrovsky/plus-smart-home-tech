@@ -5,8 +5,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.dto.*;
 import ru.yandex.practicum.exception.NotEnoughQuantityException;
+import ru.yandex.practicum.exception.NotFoundException;
 import ru.yandex.practicum.exception.ProductAlreadyInWarehouseException;
 import ru.yandex.practicum.exception.ProductNotFoundException;
+import ru.yandex.practicum.feign.ShoppingCartOperations;
 import ru.yandex.practicum.mapper.WarehouseProductMapper;
 import ru.yandex.practicum.model.WarehouseProduct;
 import ru.yandex.practicum.repository.WarehouseRepository;
@@ -20,6 +22,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WarehouseService {
     private final WarehouseRepository warehouseRepository;
+    private final ShoppingCartOperations shoppingCartOperations;
 
     private final List<AddressDto> addresses = List.of(
             new AddressDto("ADDRESS_1", "ADDRESS_1", "ADDRESS_1", "ADDRESS_1", "ADDRESS_1"),
@@ -59,7 +62,6 @@ public class WarehouseService {
         return addresses.get(addressIndex);
     }
 
-    @Transactional(readOnly = true)
     public BookedProductsDto checkShoppingCart(ShoppingCartDto shoppingCart) {
         List<UUID> productIds = new ArrayList<>(shoppingCart.getProducts().keySet());
         Map<UUID, WarehouseProduct> products = warehouseRepository.findAllByProductIdIn(productIds)
@@ -88,4 +90,27 @@ public class WarehouseService {
         }
         return new BookedProductsDto(totalWeight, totalVolume, hasFragile);
     }
-}
+
+    public void returnProducts(Map<UUID, Integer> items) {
+        List<AddProductToWarehouseRequest> requests = items.entrySet().stream()
+                .map(entry -> new AddProductToWarehouseRequest(entry.getKey(), entry.getValue()))
+                .toList();
+        requests.forEach(this::increaseProductQuantity);
+    }
+
+    public void bookProductsFromOrder(OrderDto orderDto) {
+        ShoppingCartDto shoppingCartDto = shoppingCartOperations.getShoppingCartById(orderDto.getShoppingCartId());
+        checkShoppingCart(shoppingCartDto);
+        Map<UUID, Integer> products = orderDto.getProducts();
+        for (Map.Entry<UUID, Integer> entry : products.entrySet()) {
+            UUID productId = entry.getKey();
+            Integer quantity = entry.getValue();
+            WarehouseProduct product = warehouseRepository.findById(productId)
+                    .orElseThrow(() -> new NotFoundException("Товар с ID " + productId + " не найден на складе"));
+
+            product.setQuantity(product.getQuantity() - quantity);
+            warehouseRepository.save(product);
+        }
+    }
+
+    }

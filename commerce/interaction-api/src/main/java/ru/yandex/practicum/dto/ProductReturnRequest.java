@@ -11,11 +11,9 @@ import java.util.UUID;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class ShoppingCartDto {
+public class ProductReturnRequest {
     @NotNull
-    private UUID shoppingCartId;
-    @NotNull
-    private String username;
+    private UUID orderId;
     @NotNull
     private Map<UUID, Integer> products;
 }

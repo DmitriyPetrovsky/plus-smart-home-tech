@@ -14,7 +14,7 @@ import java.util.UUID;
 public interface ShoppingCartOperations {
 
     @GetMapping
-    ShoppingCartDto getUsersShoppingCart(@RequestParam String username);
+    ShoppingCartDto getShoppingCartById(@RequestParam String username);
 
     @PutMapping
     ShoppingCartDto addProductToShoppingCart(@RequestParam String username,
@@ -30,4 +30,7 @@ public interface ShoppingCartOperations {
     @PostMapping("/change-quantity")
     ShoppingCartDto changeProductQuantityInCart(@RequestParam String username,
                                                 @Valid @RequestBody ChangeProductQuantityRequest request);
+
+    @GetMapping("/id")
+    ShoppingCartDto getShoppingCartById(@RequestParam UUID shoppingCartId);
 }

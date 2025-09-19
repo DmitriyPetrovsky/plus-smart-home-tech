@@ -21,7 +21,7 @@ public class ShoppingCartController implements ShoppingCartOperations {
     private final ShoppingCartService shoppingCartService;
 
     @Override
-    public ShoppingCartDto getUsersShoppingCart(String username) {
+    public ShoppingCartDto getShoppingCartById(String username) {
         log.info("Получен запрос на выдачу корзины пользователя: {}", username);
         return shoppingCartService.getUsersShoppingCart(username);
     }
@@ -48,5 +48,11 @@ public class ShoppingCartController implements ShoppingCartOperations {
     public ShoppingCartDto changeProductQuantityInCart(String username, ChangeProductQuantityRequest request) {
         log.info("Получен запрос на изменение количества товара в корзине пользователя: {}", username);
         return shoppingCartService.changeProductQuantityInCart(username, request);
+    }
+
+    @Override
+    public ShoppingCartDto getShoppingCartById(UUID shoppingCartId) {
+        log.info("Получен запрос на выдачу корзины по ID: {}", shoppingCartId);
+        return shoppingCartService.getShoppingCartById(shoppingCartId);
     }
 }
