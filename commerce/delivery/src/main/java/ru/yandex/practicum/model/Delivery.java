@@ -18,18 +18,18 @@ public class Delivery {
 
     @Id
     @UuidGenerator
-    UUID deliveryId;
+    private UUID deliveryId;
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "from_address_id", referencedColumnName = "address_id")
-    Address fromAddress;
+    private Address fromAddress;
 
     @ManyToOne(cascade = CascadeType.ALL)
     @JoinColumn(name = "to_address_id", referencedColumnName = "address_id")
-    Address toAddress;
+    private Address toAddress;
 
-    UUID orderId;
+    private UUID orderId;
 
     @Enumerated(EnumType.STRING)
-    DeliveryState deliveryState;
+    private DeliveryState deliveryState;
 }

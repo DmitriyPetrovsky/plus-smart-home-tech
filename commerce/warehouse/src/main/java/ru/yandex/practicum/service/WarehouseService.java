@@ -5,11 +5,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import ru.yandex.practicum.dto.*;
 import ru.yandex.practicum.exception.NotEnoughQuantityException;
-import ru.yandex.practicum.exception.NotFoundException;
 import ru.yandex.practicum.exception.ProductAlreadyInWarehouseException;
 import ru.yandex.practicum.exception.ProductNotFoundException;
-import ru.yandex.practicum.feign.OrderOperations;
-import ru.yandex.practicum.feign.ShoppingCartOperations;
 import ru.yandex.practicum.mapper.WarehouseMapper;
 import ru.yandex.practicum.model.OrderBooking;
 import ru.yandex.practicum.model.WarehouseProduct;
@@ -25,8 +22,6 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class WarehouseService {
     private final WarehouseRepository warehouseRepository;
-    private final ShoppingCartOperations shoppingCartOperations;
-    private final OrderOperations orderOperations;
     private final OrderBookingRepository orderBookingRepository;
 
     private final List<AddressDto> addresses = List.of(
@@ -56,6 +51,23 @@ public class WarehouseService {
         warehouseRepository.save(product);
     }
 
+    public void increaseProductsQuantity(List<AddProductToWarehouseRequest> requests) {
+        List<UUID> productIds = requests.stream()
+                .map(AddProductToWarehouseRequest::getProductId)
+                .collect(Collectors.toList());
+        Map<UUID, WarehouseProduct> products = warehouseRepository.findAllByProductIdIn(productIds)
+                .stream()
+                .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
+        for (AddProductToWarehouseRequest request : requests) {
+            WarehouseProduct product = products.get(request.getProductId());
+            if (product == null) {
+                throw new ProductNotFoundException("Товар с ID " + request.getProductId() + " не найден на складе");
+            }
+            product.setQuantity(product.getQuantity() + request.getQuantity());
+        }
+        warehouseRepository.saveAll(products.values());
+    }
+
     private WarehouseProduct getWarehouseProduct(UUID id) {
         return warehouseRepository.findById(id).orElseThrow(() ->
                 new ProductNotFoundException("Товар отсутствует в базе склада!")
@@ -68,14 +80,31 @@ public class WarehouseService {
     }
 
     public BookedProductsDto checkShoppingCart(ShoppingCartDto shoppingCart) {
+        if (shoppingCart.getProducts().isEmpty()) {
+            return new BookedProductsDto(0d, 0d, false);
+        }
         List<UUID> productIds = new ArrayList<>(shoppingCart.getProducts().keySet());
         Map<UUID, WarehouseProduct> products = warehouseRepository.findAllByProductIdIn(productIds)
                 .stream()
                 .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
-        boolean hasFragile = false;
-        double totalVolume = 0d;
-        double totalWeight = 0d;
-        for (Map.Entry<UUID, Integer> entry : shoppingCart.getProducts().entrySet()) {
+        return calculateBookingParameters(shoppingCart.getProducts(), products);
+    }
+
+    public void returnProducts(Map<UUID, Integer> items) {
+        if (items.isEmpty()) return;
+        List<AddProductToWarehouseRequest> requests = items.entrySet().stream()
+                .map(entry -> new AddProductToWarehouseRequest(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+        increaseProductsQuantity(requests);
+    }
+
+    private BookedProductsDto checkAndReserveProducts(AssemblyProductsForOrderRequest assembly) {
+        List<UUID> productIds = new ArrayList<>(assembly.getProducts().keySet());
+        Map<UUID, WarehouseProduct> products = warehouseRepository.findAllByProductIdIn(productIds)
+                .stream()
+                .collect(Collectors.toMap(WarehouseProduct::getProductId, Function.identity()));
+        BookedProductsDto bookedProductsDto = calculateBookingParameters(assembly.getProducts(), products);
+        for (Map.Entry<UUID, Integer> entry : assembly.getProducts().entrySet()) {
             UUID productId = entry.getKey();
             Integer quantity = entry.getValue();
             WarehouseProduct product = products.get(productId);
@@ -84,6 +113,36 @@ public class WarehouseService {
             }
             if (product.getQuantity() < quantity) {
                 throw new NotEnoughQuantityException("Недостаточно товара с ID " + productId + " на складе.");
+            }
+            product.setQuantity(product.getQuantity() - quantity);
+        }
+        warehouseRepository.saveAll(products.values());
+        return bookedProductsDto;
+    }
+
+    @Transactional
+    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest assembly) {
+        BookedProductsDto bookedProductsDto = checkAndReserveProducts(assembly);
+        OrderBooking orderBooking = new OrderBooking();
+        orderBooking.setFragile(bookedProductsDto.getFragile());
+        orderBooking.setDeliveryVolume(bookedProductsDto.getDeliveryVolume());
+        orderBooking.setDeliveryWeight(bookedProductsDto.getDeliveryWeight());
+        orderBooking.setProducts(new HashMap<>(assembly.getProducts()));
+        orderBooking.setOrderId(assembly.getOrderId());
+        orderBookingRepository.save(orderBooking);
+        return bookedProductsDto;
+    }
+
+    private BookedProductsDto calculateBookingParameters(Map<UUID, Integer> requestedProducts, Map<UUID, WarehouseProduct> availableProducts) {
+        boolean hasFragile = false;
+        double totalVolume = 0d;
+        double totalWeight = 0d;
+        for (Map.Entry<UUID, Integer> entry : requestedProducts.entrySet()) {
+            UUID productId = entry.getKey();
+            Integer quantity = entry.getValue();
+            WarehouseProduct product = availableProducts.get(productId);
+            if (product == null) {
+                throw new ProductNotFoundException("Товар с ID " + productId + " не найден на складе");
             }
             if (product.isFragile()) {
                 hasFragile = true;
@@ -96,36 +155,11 @@ public class WarehouseService {
         return new BookedProductsDto(totalWeight, totalVolume, hasFragile);
     }
 
-    public void returnProducts(Map<UUID, Integer> items) {
-        List<AddProductToWarehouseRequest> requests = items.entrySet().stream()
-                .map(entry -> new AddProductToWarehouseRequest(entry.getKey(), entry.getValue()))
-                .toList();
-        requests.forEach(this::increaseProductQuantity);
-    }
-
-    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest assembly) {
-        OrderDto orderDto = orderOperations.findOrderById(assembly.getOrderId());
-        ShoppingCartDto shoppingCartDto = shoppingCartOperations.getShoppingCartById(orderDto.getShoppingCartId());
-        BookedProductsDto bookedProductsDto = checkShoppingCart(shoppingCartDto);
-        Map<UUID, Integer> products = orderDto.getProducts();
-        for (Map.Entry<UUID, Integer> entry : products.entrySet()) {
-            UUID productId = entry.getKey();
-            Integer quantity = entry.getValue();
-            WarehouseProduct product = warehouseRepository.findById(productId)
-                    .orElseThrow(() -> new NotFoundException("Товар с ID " + productId + " не найден на складе"));
-
-            product.setQuantity(product.getQuantity() - quantity);
-            warehouseRepository.save(product);
-        }
-        OrderBooking orderBooking = WarehouseMapper.mapToOrderBooking(bookedProductsDto, assembly);
-        orderBookingRepository.save(orderBooking);
-        return bookedProductsDto;
-    }
-
     public void shipToDelivery(ShippedToDeliveryRequest request) {
         OrderBooking booking = orderBookingRepository.findByOrderId(request.getOrderId());
-        booking.setDeliveryId(request.getDeliveryId());
-        orderBookingRepository.save(booking);
+        if (booking != null) {
+            booking.setDeliveryId(request.getDeliveryId());
+            orderBookingRepository.save(booking);
+        }
     }
-
 }

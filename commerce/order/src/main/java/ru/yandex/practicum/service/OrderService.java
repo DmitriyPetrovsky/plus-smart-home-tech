@@ -12,6 +12,7 @@ import ru.yandex.practicum.mapper.OrderMapper;
 import ru.yandex.practicum.model.Order;
 import ru.yandex.practicum.repository.OrderRepository;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -72,14 +73,23 @@ public class OrderService {
     }
 
     public Double calculateProductsCost(Map<UUID, Integer> products) {
+        if (products.isEmpty()) {
+            return 0.0;
+        }
+
+        List<UUID> productIds = new ArrayList<>(products.keySet());
+        List<ProductDto> productDtos = shoppingStoreOperations.getProductsByIds(productIds);
+
+        Map<UUID, Double> productPrices = productDtos.stream()
+                .collect(Collectors.toMap(ProductDto::getProductId, ProductDto::getPrice));
+
         return products.entrySet().stream()
-                .map(entry -> {
+                .mapToDouble(entry -> {
                     UUID productId = entry.getKey();
                     Integer quantity = entry.getValue();
-                    Double productPrice = shoppingStoreOperations.getProductById(productId).getPrice();
-                    return quantity * productPrice;
+                    Double price = productPrices.getOrDefault(productId, 0.0);
+                    return quantity * price;
                 })
-                .mapToDouble(Double::doubleValue)
                 .sum();
     }
 

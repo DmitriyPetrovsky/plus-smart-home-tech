@@ -1,6 +1,5 @@
 package ru.yandex.practicum.feign;
 
-import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,13 +14,13 @@ import java.util.UUID;
 public interface WarehouseOperations {
 
     @PutMapping
-    void addProductToWarehouse(@Valid @RequestBody NewProductInWarehouseRequest request);
+    void addProductToWarehouse(@RequestBody NewProductInWarehouseRequest request);
 
     @PostMapping("/check")
-    BookedProductsDto checkShoppingCart(@Valid @RequestBody ShoppingCartDto shoppingCartDto);
+    BookedProductsDto checkShoppingCart(@RequestBody ShoppingCartDto shoppingCartDto);
 
     @PostMapping("/add")
-    void increaseProductQuantity(@Valid @RequestBody AddProductToWarehouseRequest request);
+    void increaseProductQuantity(@RequestBody AddProductToWarehouseRequest request);
 
     @GetMapping("/address")
     AddressDto getWarehouseAddress();
@@ -30,8 +29,8 @@ public interface WarehouseOperations {
     void returnProducts(@RequestBody Map<UUID, Integer> returnedItems);
 
     @PostMapping("/assembly")
-    BookedProductsDto assemblyProductsForOrder(@Valid @RequestBody AssemblyProductsForOrderRequest assembly);
+    BookedProductsDto assemblyProductsForOrder(@RequestBody AssemblyProductsForOrderRequest assembly);
 
     @PostMapping("/shipped")
-    void shippedToDelivery(@Valid @RequestBody ShippedToDeliveryRequest shippedToDeliveryRequest);
+    void shippedToDelivery(@RequestBody ShippedToDeliveryRequest shippedToDeliveryRequest);
 }

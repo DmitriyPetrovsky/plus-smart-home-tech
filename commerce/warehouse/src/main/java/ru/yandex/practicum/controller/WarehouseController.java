@@ -27,13 +27,13 @@ public class WarehouseController implements WarehouseOperations {
     }
 
     @Override
-    public BookedProductsDto checkShoppingCart(ShoppingCartDto shoppingCartDto) {
+    public BookedProductsDto checkShoppingCart(@Valid @RequestBody ShoppingCartDto shoppingCartDto) {
         log.info("Получен запрос на проверку корзины товаров c ID: {}", shoppingCartDto.getShoppingCartId());
         return warehouseService.checkShoppingCart(shoppingCartDto);
     }
 
     @Override
-    public void increaseProductQuantity(AddProductToWarehouseRequest request) {
+    public void increaseProductQuantity(@Valid @RequestBody AddProductToWarehouseRequest request) {
         log.info("Получен запрос на увеличение количества товара с ID: {} на {} единиц", request.getProductId(), request.getQuantity());
         warehouseService.increaseProductQuantity(request);
     }
@@ -45,20 +45,20 @@ public class WarehouseController implements WarehouseOperations {
     }
 
     @Override
-    public void returnProducts(Map<UUID, Integer> returnedItems) {
+    public void returnProducts(@RequestBody Map<UUID, Integer> returnedItems) {
         log.info("Получен запрос на возврат товаров");
         warehouseService.returnProducts(returnedItems);
     }
 
     @Override
-    public BookedProductsDto assemblyProductsForOrder(AssemblyProductsForOrderRequest assembly) {
-        log.info("Получен запрос на бронирование товаров на складе");
+    public BookedProductsDto assemblyProductsForOrder(@Valid @RequestBody AssemblyProductsForOrderRequest assembly) {
+        log.info("Получен запрос на бронирование товаров на складе для заказа {}", assembly.getOrderId());
         return warehouseService.assemblyProductsForOrder(assembly);
     }
 
     @Override
     public void shippedToDelivery(@Valid @RequestBody ShippedToDeliveryRequest shippedToDeliveryRequest) {
-        log.info("Получен запрос на отгрузку товара");
+        log.info("Получен запрос на отгрузку товара для заказа {}", shippedToDeliveryRequest.getOrderId());
         warehouseService.shipToDelivery(shippedToDeliveryRequest);
     }
 }
