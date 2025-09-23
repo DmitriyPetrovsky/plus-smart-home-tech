@@ -13,7 +13,7 @@ import java.util.UUID;
 @AllArgsConstructor
 public class AddProductToWarehouseRequest {
     @NotNull
-    UUID productId;
+    private UUID productId;
     @DecimalMin(value = "1")
-    int quantity;
+    private int quantity;
 }

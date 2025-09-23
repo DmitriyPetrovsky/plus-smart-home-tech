@@ -1,6 +1,5 @@
 package ru.yandex.practicum.feign;
 
-import jakarta.validation.Valid;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 import ru.yandex.practicum.dto.ChangeProductQuantityRequest;
@@ -14,7 +13,7 @@ import java.util.UUID;
 public interface ShoppingCartOperations {
 
     @GetMapping
-    ShoppingCartDto getUsersShoppingCart(@RequestParam String username);
+    ShoppingCartDto getShoppingCartById(@RequestParam String username);
 
     @PutMapping
     ShoppingCartDto addProductToShoppingCart(@RequestParam String username,
@@ -29,5 +28,8 @@ public interface ShoppingCartOperations {
 
     @PostMapping("/change-quantity")
     ShoppingCartDto changeProductQuantityInCart(@RequestParam String username,
-                                                @Valid @RequestBody ChangeProductQuantityRequest request);
+                                                @RequestBody ChangeProductQuantityRequest request);
+
+    @GetMapping("/id")
+    ShoppingCartDto getShoppingCartById(@RequestParam UUID shoppingCartId);
 }

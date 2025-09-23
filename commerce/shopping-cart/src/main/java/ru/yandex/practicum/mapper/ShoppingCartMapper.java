@@ -12,6 +12,7 @@ public class ShoppingCartMapper {
         }
         return new ShoppingCartDto(
                 cart.getShoppingCartId(),
+                cart.getUsername(),
                 cart.getProducts() != null ? new HashMap<>(cart.getProducts()) : new HashMap<>()
         );
     }

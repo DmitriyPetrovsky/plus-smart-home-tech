@@ -11,9 +11,9 @@ import ru.yandex.practicum.mapper.ProductMapper;
 import ru.yandex.practicum.model.Product;
 import ru.yandex.practicum.repository.ShoppingStoreRepository;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -65,5 +65,12 @@ public class ShoppingStoreService {
     public Page<ProductDto> getProductsByCategory(ProductCategory category, Pageable pageable) {
         return shoppingStoreRepository.findAllByProductCategory(category, pageable)
                 .map(ProductMapper::mapToProductDto);
+    }
+
+    @Transactional
+    public List<ProductDto> getProductsByIds(List<UUID> productIds) {
+        return shoppingStoreRepository.findAllById(productIds).stream()
+                .map(ProductMapper::mapToProductDto)
+                .collect(Collectors.toList());
     }
 }
